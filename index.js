@@ -1,13 +1,16 @@
 
 var through = require('through2');
-var sublevel = require('subleveldown');
 var xtend = require('xtend');
 var async = require('async');
 var changes = require('level-changes');
+var elasticsearch = require('elasticsearch');
+
+// TODO check this out
+// https://github.com/hmalphettes/elasticsearch-streams
 
 // resolve a path like ['foo', 'bar', 'baz']
 // to return the value of obj.foo.bar.baz
-// or undefined if tha path does not exist
+// or undefined if that path does not exist
 function resolvePropPath(obj, path) {
 
   if(path.length > 1) {
@@ -23,22 +26,33 @@ function resolvePropPath(obj, path) {
   return undefined;
 }
 
-function esIndexer(db, es, opts) {
-  if(!(this instanceof esIndexer)) return new esIndexer(db, es, opts);
-
-  this.db = db;
-  this.es = es;
+function esIndexer(db, opts) {
+  if(!(this instanceof esIndexer)) return new esIndexer(db, opts);
 
   this.opts = xtend({
-
+    hostname: 'localhost',
+    port: 9200,
+    es: undefined // pass in your own elasticsearch
   }, opts || {});
+
+  this.db = db;
+
+  if(this.opts.es) {
+    this.es = es;
+  } else {
+    this.es = new elasticsearch.Client({
+      host: this.opts.hostname + ':' + this.opts.port
+    });
+  }
 
   this.indexes = {};
 
   this.c = changes(this.db);
   this.c.on('data', function(change) {
     if(change.type === 'put') {
-      this._updateIndexes(change.key, change.value);
+      this._updateIndexes(change.key, change.value, function(err) {
+        if(err) console.log(err);
+      });
     } else { // del
       this._deleteFromIndex(change.key);
     }
@@ -60,40 +74,59 @@ function esIndexer(db, es, opts) {
 
   this._nullFunc = function(){};
 
+  this._addToES = function(indexName, key, indexBody, cb) {
+    this.es.bulk({
+      body: [
+        {index: {_index: indexName, _type: indexName, _id: key}},
+        indexBody
+      ]
+    }, cb);
+  };
+
+  this._deleteFromES = function(indexName, id, cb) {
+    this.es.bulk({
+      body: [
+        {delete: {_index: indexName, _id: id}}
+      ]
+    }, cb);
+  };
+
   this._updateIndex = function(idx, key, value, cb) {
     cb = cb || this._nullFunc;
     if(!idx.f) return;
-    
+
+    var self = this;
+
     if(idx.async) {
         idx.f(key, value, function(err, indexValue) {
           if(err) return cb(err);;
           if(!indexValue) return cb();
 
-          // TODO write to es
-
+          self._addToES(idx.name, key, indexValue, cb);
         })
       } else {
         try {
           var indexValue = idx.f(key, value);
+
         } catch(err) {
           return cb(err);
         }
 
         if(!indexValue) return cb();
 
-        // TODO write to es
+        this._addToES(idx.name, key, indexValue, cb);
       }
   }
 
   this._deleteFromIndex = function(key, cb) {
     cb = cb || this._nullFunc;
-    var k, idx;
-    for(k in this.indexes) {
-      idx = this.indexes[k];
 
-      // TODO write to es
-    }
-  }
+    var self = this;
+
+    async.eachOf(this.indexes, function(k, idx, cb) {
+      self._deleteFromES(idx, key, cb);
+    }, cb);
+  };
 
   // return an indexer that indexes by property
   this._propIndexer = function(propPath, opts) {
@@ -148,8 +181,6 @@ function esIndexer(db, es, opts) {
       f: indexFunc,
       async: opts.async
     };
-
-    // TODO deal with types?
   };
 
   this.del = function(name, cb) {
@@ -243,6 +274,10 @@ function esIndexer(db, es, opts) {
     });
   };
 
+  this.search = function(indexName, query, cb) {
+    
+  };
+
   this.get = function(indexName, indexKey, cb) {
     var idx = this.indexes[indexName];
     if(!idx) return cb(new Error("Index does not exist"));
@@ -250,33 +285,17 @@ function esIndexer(db, es, opts) {
     // TODO get from es
   };
 
-  this.createReadStream = function(indexName, opts) {
-    opts = xtend({
-      keys: true, // output keys
-      values: true // output values
-    }, opts || {});    
-    var idx = this.indexes[indexName];
-    if(!idx) return cb(new Error("Index does not exist"));
+  this.search = function(indexName, q, cb) {
 
-    // TODO does es even stream?
-
-    return out;
+    this.es.search({
+      index: indexName,
+      body: q
+    }, function(err, result) {
+      if(err) return cb(err);
+      cb(null, result);
+    });
   };
-
-  this.createKeyStream = function(indexName, opts) {
-    opts = opts || {};
-    opts.keys = true;
-    opts.values = false;
-    return this.createReadStream(indexName, opts);
-  };
-
-  this.createValueStream = function(indexName, opts) {
-    opts = opts || {};
-    opts.keys = false;
-    opts.values = true;
-    return this.createReadStream(indexName, opts);
-  };
-
+  
 }
 
-module.exports = indexer;
+module.exports = esIndexer;
