@@ -1,7 +1,7 @@
 
-THIS IS NOT YET IN A WORKING STATE!
+THIS IS NOT YET PRODUCTION READY!
 
-A very simple ElasticSearch indexer for leveldb.
+A very simple ElasticSearch indexer for leveldb/levelup. Keeps ElasticSearch indexes up to date with the contents of a levelup database.
 
 # Usage
 
@@ -15,7 +15,14 @@ index.add('myIndex', function(key, value) {
 db.put('0', {name: 'cookie', content: "some searchable content"}, function(err) {
   if(err) return console.error(err);
 
-  var query = 'search';
+  var query = {
+    query: {
+      match: {
+        name: 'content'
+      }
+    }
+  };
+
   index.search('myIndex', query, function(err, results) {
     if(err) return console.error(err);
 
@@ -23,6 +30,13 @@ db.put('0', {name: 'cookie', content: "some searchable content"}, function(err) 
   });
 });
 ```
+
+# Notes
+
+Note that the `.add` method doesn't actually add an index to ElasticSearch. The actual ElasticSearch index does not get created until the first change to the database occurs. The `.remove` method does however actually remove the index from ElasticSearch.
+
+# API
+
 
 # Why?
 

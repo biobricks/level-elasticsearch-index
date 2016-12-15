@@ -86,7 +86,7 @@ function esIndexer(db, opts) {
   this._deleteFromES = function(indexName, id, cb) {
     this.es.bulk({
       body: [
-        {delete: {_index: indexName, _id: id}}
+        {delete: {_index: indexName, _type: indexName, _id: id}}
       ]
     }, cb);
   };
@@ -117,6 +117,7 @@ function esIndexer(db, opts) {
         this._addToES(idx.name, key, indexValue, cb);
       }
   }
+
 
   this._deleteFromIndex = function(key, cb) {
     cb = cb || this._nullFunc;
@@ -205,16 +206,16 @@ function esIndexer(db, opts) {
       cb = opts;
       opts = {};
     }
-
     cb = cb || this._nullFunc;
     opts = opts || {};
-    var db, rdb;
 
     if(opts.all) {
-      // TODO clear all indexes
-    } else {
-      // TODO clear named index
+      name = '*';
     }
+
+    this.es.indices.delete({
+      index: name
+    }, cb);
   };
 
   // clear all indexes (delete the index data from the db)
@@ -238,7 +239,18 @@ function esIndexer(db, opts) {
 
     var self = this;
 
-    // TODO build index
+    var s = this.db.createReadStream();
+    s.on('data', function(data) {
+      self._updateIndex(idx, data.key, data.value);
+    });
+
+    s.on('error', function(err) {
+      return cb(err);
+    });
+
+    s.on('end', function() {
+      return cb();
+    });
   };
 
   // build all indexes from scratch for existing contents of the db
@@ -272,17 +284,6 @@ function esIndexer(db, opts) {
 
       self.buildAll(cb);
     });
-  };
-
-  this.search = function(indexName, query, cb) {
-    
-  };
-
-  this.get = function(indexName, indexKey, cb) {
-    var idx = this.indexes[indexName];
-    if(!idx) return cb(new Error("Index does not exist"));
-    
-    // TODO get from es
   };
 
   this.search = function(indexName, q, cb) {

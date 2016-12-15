@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var esIndexer = require('./index.js');
+var esIndexer = require('../index.js');
 var sublevel = require('subleveldown');
 var memdb = require('memdb');
 
