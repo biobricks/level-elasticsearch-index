@@ -1,6 +1,6 @@
 {
   "name": "level-elasticsearch-index",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "ElasticSearch indexing for leveldb",
   "homepage": "http://github.com/biobricks/level-elasticsearch-index",
   "main": "index.js",
