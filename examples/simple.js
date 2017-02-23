@@ -15,30 +15,41 @@ function fail(err) {
 }
 
 
-indexer.add('part', function(key, val) {
-  return val;
-});
+console.log("Adding index");
 
-db.put('1', {name: "foo"}, function(err) {
+indexer.addIndex('book', 'author');
+
+console.log("Adding data");
+
+db.put('1', {author: {name: "foo"}}, function(err) {
     if(err) fail(err);
     
-  db.put('2', {name: "bar"}, function(err) {
+  db.put('2', {author: {name: "bar"}}, function(err) {
     if(err) fail(err);
   
+    // see the callback.js example if you don't want an arbitrary delay
+    console.log("Waiting for index creation");
+
     setTimeout(function() {
-      indexer.search('part', {
+      indexer.match('book', {
         query: {
           match: {
             name: "foo"
           }
         }
       }, function(err, result) {
-        if(err) return fail(err);
-//        console.log("Got result:", result);
-        console.log("Hits:", result.hits.hits);
+        if(err) fail(err);
+
+        console.log("Hits:", result);
+
+        indexer.delIndex('book', function(err) {
+          if(err) fail(err);
+
+          console.log("Removed index");
+        });
       });
 
-    }, 2000);
+    }, 3000);
 
   });  
 });

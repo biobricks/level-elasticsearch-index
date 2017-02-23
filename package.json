@@ -23,6 +23,7 @@
   "dependencies": {
     "async": "^2.1.2",
     "elasticsearch": "^12.1.0",
+    "from2": "^2.3.0",
     "level-changes": "0.0.1",
     "through2": "^2.0.1",
     "xtend": "^4.0.1"
