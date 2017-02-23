@@ -1,7 +1,7 @@
 
 THIS IS NOT YET PRODUCTION READY!
 
-A very simple ElasticSearch indexer for leveldb/levelup. Automatically keeps multiple ElasticSearch indexes up to date with the contents of a levelup database. Let's you run ElasticSearch queries and stream results from either leveldb or the index.
+A very simple ElasticSearch indexer for leveldb/levelup. Automatically keeps multiple ElasticSearch indexes up to date with the contents of a levelup database. Lets you run ElasticSearch queries and stream results from either leveldb or the index.
 
 # Usage
 
