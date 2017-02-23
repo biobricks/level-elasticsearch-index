@@ -224,7 +224,7 @@ function esIndexer(db, opts) {
   // indexBy is a property name, property path or function that is used
   // retrieve the data to be searched/indexed from the leveldb value.
   // See readme for exhaustive list of calling conventions
-  this.addIndex = function(name, opts, indexBy) {
+  this.add = function(name, opts, indexBy) {
 
     // check for calling without opts but with index function or property name
     if(typeof opts === 'function' || typeof opts === 'string') {
@@ -237,10 +237,10 @@ function esIndexer(db, opts) {
     }, opts || {});
 
     var indexFunc;
-    // check for calling convention: .addIndex('propName', [opts])
+    // check for calling convention: .add('propName', [opts])
     if(!indexBy && (!opts || typeof opts === 'object')) {
       indexFunc = null;
-    // check for calling convention: .addIndex('indexName', [opts], 'propName')
+    // check for calling convention: .add('indexName', [opts], 'propName')
     } else if(typeof indexBy === 'string') {
       indexFunc = this._propIndexer(indexBy);
     } else {
@@ -503,8 +503,6 @@ function esIndexer(db, opts) {
     }, opts, cb);
   };
 
-  // TODO in progress
-
   this.searchStream = function(indexName, q, opts) {
 
     opts = xtend({
@@ -583,6 +581,11 @@ function esIndexer(db, opts) {
 
       });
     });
+  };
+
+  this.queryStream = function(indexName, m, opts) {
+    // TODO implement
+    throw new Error("not implemented");
   };
 
   this.matchStream = function(indexName, m, opts) {

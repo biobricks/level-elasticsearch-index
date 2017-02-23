@@ -17,7 +17,7 @@ function fail(err) {
 
 console.log("Adding index");
 
-indexer.addIndex('book', 'author');
+indexer.add('book', 'author');
 
 console.log("Adding data");
 
