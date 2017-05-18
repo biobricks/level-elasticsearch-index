@@ -596,6 +596,10 @@ function esIndexer(db, opts) {
     }, opts);
   };
   
+  this.ping = function(cb) {
+    this.es.ping(cb);
+  };
+
 }
 
 module.exports = esIndexer;
